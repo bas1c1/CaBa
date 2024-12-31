@@ -48,7 +48,7 @@ func handleRequest(conn net.Conn) {
 		parseRequest(string(buffer[:n])),
 	}
 
-	_, res, _ := q.Add(tr)
+	_, res := q.Add(tr)
 	s := string(<-res)
 
 	responseStr := fmt.Sprintf("%v", s)

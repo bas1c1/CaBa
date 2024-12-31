@@ -37,7 +37,7 @@ func newQueue(maxSize int64) *queue {
 	return queue
 }
 
-func (q *queue) Add(tr transaction) (int64, <-chan string, error) {
+func (q *queue) Add(tr transaction) (int64, <-chan string) {
 	q.mutex.Lock()
 	defer q.mutex.Unlock()
 
@@ -59,7 +59,7 @@ func (q *queue) Add(tr transaction) (int64, <-chan string, error) {
 	q.items = append(q.items, item)
 	q.addChan <- item
 
-	return id, resultChan, nil
+	return id, resultChan
 }
 
 func (q *queue) Remove(id int64) {
