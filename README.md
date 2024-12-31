@@ -1,4 +1,5 @@
 # CaBa
-CaBa - cache based, lightweight and fast database written in GoLang
+
+CaBa - caching, lightweight NoSQL key-value database written in GoLang
 
 <img src="caba_logo.png">
