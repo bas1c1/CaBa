@@ -9,7 +9,6 @@ import (
 
 var maindb db = db{"name", 3}
 var cache_ cache
-var empt_ds dbslice
 var q *queue = newQueue(8192)
 
 const (

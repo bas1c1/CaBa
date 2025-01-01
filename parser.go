@@ -1,39 +1,25 @@
 package main
 
-import (
-	"fmt"
-	"os"
-	"strconv"
-)
-
 func parseDbSlice(line string) dbslice {
-	ds := dbslice{-1, "", ""}
+	ds := dbslice{"", ""}
 	l := len(line)
 
 	var buf string
 
-	for i := 0; i < l; i++ {
+	for i := 0; i < l-1; i++ {
 		if line[i] == ';' {
-			if ds.index == -1 {
-				ind, err := strconv.Atoi(buf)
-				if err != nil {
-					fmt.Println(err)
-					os.Exit(1)
-				}
-				ds.index = ind
-				buf = ""
-			} else {
-				ds.key = buf
-				buf = ""
-			}
+			ds.key = buf
+			buf = ""
+			continue
+		} else if line[i] == '"' {
+			buf += parseString(line, &i)
 			continue
 		}
+
 		buf += string(line[i])
-		if i == l-1 {
-			ds.value = buf
-			break
-		}
 	}
+
+	ds.value = buf
 
 	return ds
 }
@@ -46,25 +32,46 @@ func parseRequest(line string) request {
 		if line[i] == '{' {
 			req.fn = buf
 			i++
-			buf = ""
-			for ; line[i] != '}'; i++ {
-				if line[i] == '"' {
-					i++
-					for ; line[i] != '"'; i++ {
-						buf += string(line[i])
-					}
-					continue
-				} else if line[i] == ',' {
-					req.args = append(req.args, buf)
-					buf = ""
-					continue
-				}
-				buf += string(line[i])
-			}
-			req.args = append(req.args, buf)
+			parseArgs(line, i, &req)
 			buf = ""
 		}
 		buf += string(line[i])
 	}
 	return req
+}
+
+func parseArgs(line string, offset int, req *request) {
+	buf := ""
+
+	for i := offset; line[i] != '}'; i++ {
+		if line[i] == '"' {
+			buf = parseString(line, &i)
+			continue
+		} else if line[i] == ',' {
+			req.args = append(req.args, buf)
+			buf = ""
+			continue
+		}
+		buf += string(line[i])
+
+	}
+
+	req.args = append(req.args, buf)
+
+}
+
+func parseString(line string, offset *int) string {
+	buf := ""
+	i := *offset + 1
+	for ; line[i] != '"' && i < len(line)-1; i++ {
+		if line[i] == '\\' {
+			buf += "\\"
+			i++
+			buf += string(line[i])
+			continue
+		}
+		buf += string(line[i])
+	}
+	*offset = i
+	return buf
 }

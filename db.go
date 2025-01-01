@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"log"
 	"os"
-	"strconv"
 )
 
 type kvpair struct {
@@ -14,7 +13,6 @@ type kvpair struct {
 }
 
 type dbslice struct {
-	index int
 	key   string
 	value string
 }
@@ -22,6 +20,15 @@ type dbslice struct {
 type db struct {
 	name  string
 	dsize int64
+}
+
+func (d db) remove(key string) {
+	for i := 0; i < len(cache_.slices); i++ {
+		if cache_.slices[i].key == key {
+			cache_.delete(key)
+		}
+	}
+	d.save(d.name)
 }
 
 func (d db) set(ks []kvpair) {
@@ -35,49 +42,76 @@ func (d db) set(ks []kvpair) {
 	scanner := bufio.NewScanner(file)
 
 	for j := 0; j < len(ks); j++ {
-		key := ks[j].key
-		value := ks[j].value
-		i := 1
+		nds := dbslice{ks[j].key, ks[j].value}
 
 		for scanner.Scan() {
 			ds := parseDbSlice(scanner.Text())
-			i++
-			if ds.key == key {
+			if ds.key == nds.key {
 				return
 			}
 		}
+		if len(nds.key) != 0 {
+			cache_.cache_ds(nds)
+			writer.WriteString("\"" + nds.key + "\";\"" + nds.value + "\"\n")
+		}
+	}
+	writer.Flush()
+}
 
-		writer.WriteString(strconv.Itoa(i) + ";" + key + ";" + value + "\n")
-		writer.Flush()
+func (d db) get(key string) *dbslice {
+	c := cache_.search_ds(key)
+	if c != nil {
+		return c
+	} else {
+		d.update(d.name)
+		return cache_.search_ds(key)
 	}
 }
 
-func (d db) get(key string) dbslice {
-	c := cache_.search_ds(key)
-	if c != nil {
-		return *c
-	} else {
-		file, err := os.Open(d.name)
-		if err != nil {
-			fmt.Println(err)
-			os.Exit(1)
-		}
-		defer file.Close()
+func (d *db) update(fname string) {
+	d.name = fname
+	file, err := os.Open(d.name)
+	if err != nil {
+		fmt.Println(err)
+		os.Exit(1)
+	}
+	defer file.Close()
 
-		scanner := bufio.NewScanner(file)
+	cache_.clear()
 
-		for scanner.Scan() {
-			ds := parseDbSlice(scanner.Text())
-			if ds.key == key {
-				cache_.cache_ds(ds)
-				return ds
-			}
-		}
+	scanner := bufio.NewScanner(file)
 
-		if err := scanner.Err(); err != nil {
+	for scanner.Scan() {
+		ds := parseDbSlice(scanner.Text())
+		cache_.cache_ds(ds)
+	}
+
+	if err := scanner.Err(); err != nil {
+		log.Fatal(err)
+	}
+}
+
+func (d *db) save(fname string) {
+	d.name = fname
+	file, err := os.Create(d.name)
+	if err != nil {
+		fmt.Println(err)
+		os.Exit(1)
+	}
+	defer file.Close()
+
+	writer := bufio.NewWriter(file)
+
+	for i := 0; i < len(cache_.slices); i++ {
+		key := cache_.slices[i].key
+		value := cache_.slices[i].value
+
+		writer.WriteString("\"" + key + "\";\"" + value + "\"\n")
+	}
+
+	if len(cache_.slices) > 0 {
+		if err := writer.Flush(); err != nil {
 			log.Fatal(err)
 		}
-
-		return empt_ds
 	}
 }
