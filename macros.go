@@ -9,7 +9,10 @@ type handle struct {
 }
 
 func throw(ex exception) {
-	panic(ex)
+	//naah
+	//panic(ex)
+
+	caba_err(ex)
 }
 
 func (hndl handle) do_() {

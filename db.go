@@ -84,8 +84,7 @@ func (d db) get(key string) *dbslice {
 }
 
 func (d *db) update(fname string) {
-	d.name = fname
-	file, err := os.Open(d.name)
+	file, err := os.Open(fname)
 	if err != nil {
 		fmt.Println(err)
 		os.Exit(1)
@@ -109,8 +108,7 @@ func (d *db) update(fname string) {
 }
 
 func (d *db) save(fname string) {
-	d.name = fname
-	file, err := os.Create(d.name)
+	file, err := os.Create(fname)
 	if err != nil {
 		fmt.Println(err)
 		os.Exit(1)
