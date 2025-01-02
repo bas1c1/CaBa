@@ -13,17 +13,17 @@ func (c *cache) clear() {
 }
 
 func (c *cache) delete(key string) {
-	for i := 0; i < len(c.slices); i++ {
-		if c.slices[i].key == key {
+	for i, sl := range c.slices {
+		if sl.key == key {
 			c.slices = append(c.slices[:i], c.slices[i+1:]...)
 		}
 	}
 }
 
 func (c cache) search_ds(key string) *dbslice {
-	for i := 0; i < len(c.slices); i++ {
-		if c.slices[i].key == key {
-			return &(c.slices[i])
+	for _, sl := range c.slices {
+		if sl.key == key {
+			return &sl
 		}
 	}
 	return nil

@@ -1,6 +1,7 @@
 package main
 
 import (
+	"bufio"
 	"fmt"
 	"log"
 	"net"
@@ -18,6 +19,32 @@ const (
 )
 
 func main() {
+	file, err := os.Open("config")
+	if err != nil {
+		defer file.Close()
+		fmt.Println("config file not found. creating config.")
+		file, err = os.Create("config")
+		if err != nil {
+			fmt.Println(err)
+			os.Exit(1)
+		}
+		defer file.Close()
+	} else {
+		defer file.Close()
+
+		cache_.clear()
+
+		scanner := bufio.NewScanner(file)
+
+		for scanner.Scan() {
+			parseConfig(scanner.Text())
+		}
+
+		if err := scanner.Err(); err != nil {
+			log.Fatal(err)
+		}
+	}
+
 	listen, err := net.Listen(TYPE, HOST+":"+PORT)
 	if err != nil {
 		log.Fatal(err)

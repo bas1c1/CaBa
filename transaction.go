@@ -15,9 +15,9 @@ func (tr transaction) execute() string {
 			return ""
 		}
 	case "set":
-		v := []kvpair{}
+		v := []dbslice{}
 		for i := 0; i < len(tr.request.args); i += 2 {
-			v = append(v, kvpair{tr.request.args[i], tr.request.args[i+1]})
+			v = append(v, dbslice{tr.request.args[i], tr.request.args[i+1]})
 		}
 		defer db.set(maindb, v)
 		return "ok - set"

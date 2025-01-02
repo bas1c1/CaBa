@@ -7,11 +7,6 @@ import (
 	"os"
 )
 
-type kvpair struct {
-	key   string
-	value string
-}
-
 type dbslice struct {
 	key   string
 	value string
@@ -23,39 +18,59 @@ type db struct {
 }
 
 func (d db) remove(key string) {
+	update_backup()
+	save_backup()
 	for i := 0; i < len(cache_.slices); i++ {
 		if cache_.slices[i].key == key {
 			cache_.delete(key)
+			caba_log("DELETED " + key)
 		}
 	}
 	d.save(d.name)
+	update_backup()
 }
 
-func (d db) set(ks []kvpair) {
+func (d db) set(ks []dbslice) {
+	update_backup()
 	file, err := os.OpenFile(d.name, os.O_APPEND|os.O_RDWR|os.O_CREATE, 0600)
 	writer := bufio.NewWriter(file)
 	if err != nil {
+		save_backup()
 		fmt.Println(err)
 		os.Exit(1)
 	}
 	defer file.Close()
 	scanner := bufio.NewScanner(file)
 
-	for j := 0; j < len(ks); j++ {
-		nds := dbslice{ks[j].key, ks[j].value}
-
+	for _, kvp := range ks {
 		for scanner.Scan() {
-			ds := parseDbSlice(scanner.Text())
-			if ds.key == nds.key {
+			ds := parseDbSlice(decrypt(scanner.Text()))
+			if ds.key == kvp.key {
 				return
 			}
 		}
-		if len(nds.key) != 0 {
-			cache_.cache_ds(nds)
-			writer.WriteString("\"" + nds.key + "\";\"" + nds.value + "\"\n")
+		if len(kvp.key) != 0 {
+			update_backup()
+			s := "\"" + kvp.key + "\";\"" + kvp.value + "\"\n"
+
+			cache_.cache_ds(kvp)
+			if _, err := writer.WriteString(encrypt(s)); err != nil {
+				save_backup()
+				fmt.Println(err)
+				os.Exit(1)
+			}
+
+			caba_log("WRITED " + s)
 		}
 	}
-	writer.Flush()
+
+	update_backup()
+
+	if err := writer.Flush(); err != nil {
+		save_backup()
+		fmt.Println(err)
+		os.Exit(1)
+	}
 }
 
 func (d db) get(key string) *dbslice {
@@ -82,9 +97,11 @@ func (d *db) update(fname string) {
 	scanner := bufio.NewScanner(file)
 
 	for scanner.Scan() {
-		ds := parseDbSlice(scanner.Text())
+		ds := parseDbSlice(decrypt(scanner.Text()))
 		cache_.cache_ds(ds)
 	}
+
+	caba_log("UPDATED FROM " + fname)
 
 	if err := scanner.Err(); err != nil {
 		log.Fatal(err)
@@ -106,8 +123,10 @@ func (d *db) save(fname string) {
 		key := cache_.slices[i].key
 		value := cache_.slices[i].value
 
-		writer.WriteString("\"" + key + "\";\"" + value + "\"\n")
+		writer.WriteString(encrypt("\"" + key + "\";\"" + value + "\"\n"))
 	}
+
+	caba_log("SAVED TO " + fname)
 
 	if len(cache_.slices) > 0 {
 		if err := writer.Flush(); err != nil {

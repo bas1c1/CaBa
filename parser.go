@@ -1,5 +1,10 @@
 package main
 
+import (
+	"slices"
+	"strings"
+)
+
 func parseDbSlice(line string) dbslice {
 	ds := dbslice{"", ""}
 	l := len(line)
@@ -12,7 +17,7 @@ func parseDbSlice(line string) dbslice {
 			buf = ""
 			continue
 		} else if line[i] == '"' {
-			buf += parseString(line, &i)
+			buf += parseString(line, &i, true)
 			continue
 		}
 
@@ -45,7 +50,7 @@ func parseArgs(line string, offset int, req *request) {
 
 	for i := offset; line[i] != '}'; i++ {
 		if line[i] == '"' {
-			buf = parseString(line, &i)
+			buf = parseString(line, &i, true)
 			continue
 		} else if line[i] == ',' {
 			req.args = append(req.args, buf)
@@ -57,15 +62,16 @@ func parseArgs(line string, offset int, req *request) {
 	}
 
 	req.args = append(req.args, buf)
-
 }
 
-func parseString(line string, offset *int) string {
+func parseString(line string, offset *int, slash bool) string {
 	buf := ""
 	i := *offset + 1
 	for ; line[i] != '"' && i < len(line)-1; i++ {
 		if line[i] == '\\' {
-			buf += "\\"
+			if slash {
+				buf += "\\"
+			}
 			i++
 			buf += string(line[i])
 			continue
@@ -74,4 +80,33 @@ func parseString(line string, offset *int) string {
 	}
 	*offset = i
 	return buf
+}
+
+func parseWord(line string, offset *int) string {
+	if slices.Contains(strings.Split("qwertryuiopasdfghjklzxcvbnmQWERTYUIOPASDFGHJKLZXCVBNM", ""), string(line[0])) {
+		tmp := ""
+		for ; line[*offset] != '='; *offset++ {
+			tmp += string(line[*offset])
+		}
+		return tmp
+	}
+	return ""
+}
+
+func parseConfig(line string) {
+	for i := 0; i < len(line); i++ {
+		if wrd := parseWord(line, &i); wrd != "" {
+			if wrd == "PASSKEY" && line[i+1] == '"' {
+				i++
+				config_.passkey = []byte(parseString(line, &i, false))
+				if len(config_.passkey) > 32 {
+					config_.passkey = config_.passkey[:32]
+				} else if diff := 32 - len(config_.passkey); diff > 0 {
+					for i := 0; i < diff; i++ {
+						config_.passkey = append(config_.passkey, byte(i))
+					}
+				}
+			}
+		}
+	}
 }
