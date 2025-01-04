@@ -16,15 +16,22 @@ type db struct {
 }
 
 func (d db) remove(key string) {
-	file, err := os.OpenFile(d.name, os.O_APPEND|os.O_RDWR|os.O_CREATE, 0600)
-	writer := bufio.NewWriter(file)
+	file, err := os.Open(d.name)
+	scanner := bufio.NewScanner(file)
 	if err != nil {
 		caba_err(err)
 	}
 	defer file.Close()
-	scanner := bufio.NewScanner(file)
+
+	tempFile, err := os.CreateTemp("", "temp_*")
+	if err != nil {
+		caba_err(err)
+	}
+	defer os.Remove(tempFile.Name())
 
 	cache_.delete(key)
+
+	writer := bufio.NewWriter(tempFile)
 
 	for scanner.Scan() {
 		s := scanner.Text()
@@ -39,9 +46,16 @@ func (d db) remove(key string) {
 	if err := writer.Flush(); err != nil {
 		caba_err(err)
 	} else {
-		caba_log("DELETED " + key)
+		file.Close()
+		tempFile.Close()
 
-		cache_.save_cache()
+		if err := os.Rename(tempFile.Name(), d.name); err != nil {
+			caba_err(err)
+		} else {
+			caba_log("DELETED " + key)
+
+			cache_.save_cache()
+		}
 	}
 }
 
