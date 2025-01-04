@@ -1,1 +1,3 @@
-PASSKEY="lolrandompass"
+PASSKEY="lolrandompass12"
+CACHE_SIZE="8192"
+PRIORITY_SYS="1"

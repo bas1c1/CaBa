@@ -2,6 +2,7 @@ package main
 
 import (
 	"slices"
+	"strconv"
 	"strings"
 )
 
@@ -93,19 +94,29 @@ func parseWord(line string, offset *int) string {
 	return ""
 }
 
+var __pkcawn = [33]string{"0", "1", "2", "3", "4", "5", "6", "7", "8", "9", "0", "1", "2", "3", "4", "5", "6", "7", "8", "9", "0", "1", "2", "3", "4", "5", "6", "7", "8", "9", "0", "1", "2"}
+
 func parseConfig(line string) {
 	for i := 0; i < len(line); i++ {
 		if wrd := parseWord(line, &i); wrd != "" {
 			if wrd == "PASSKEY" && line[i+1] == '"' {
 				i++
-				config_.passkey = []byte(parseString(line, &i, false))
-				if len(config_.passkey) > 32 {
-					config_.passkey = config_.passkey[:32]
-				} else if diff := 32 - len(config_.passkey); diff > 0 {
-					for i := 0; i < diff; i++ {
-						config_.passkey = append(config_.passkey, byte(i))
+				passkey := parseString(line, &i, false)
+				if len(passkey) > 32 {
+					passkey = passkey[:32]
+				} else if diff := 32 - len(passkey); diff > 0 {
+					for j := 0; j < diff; j++ {
+						passkey += __pkcawn[j]
 					}
 				}
+				config_.passkey = []byte(passkey)
+			} else if wrd == "CACHE_SIZE" && line[i+1] == '"' {
+				i++
+				config_.cache_size, _ = strconv.Atoi(parseString(line, &i, false))
+			} else if wrd == "PRIORITY_SYS" && line[i+1] == '"' {
+				i++
+				ps, _ := strconv.Atoi(parseString(line, &i, false))
+				config_.priority_sys = ps != 0
 			}
 		}
 	}

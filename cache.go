@@ -1,30 +1,81 @@
 package main
 
+import "sync"
+
 type cache struct {
-	slices []dbslice //it's array btw
+	m     map[string]string
+	mutex sync.RWMutex
+}
+
+var tmpc = cache{m: map[string]string{}}
+
+func (c *cache) save_cache() {
+	tmpc.mutex.Lock()
+	defer tmpc.mutex.Unlock()
+
+	tmpc.m = map[string]string{}
+
+	c.mutex.RLock()
+	defer c.mutex.RUnlock()
+
+	for k, v := range c.m {
+		tmpc.m[k] = v
+	}
+	caba_log("UPDATED LAST CACHE")
+}
+
+func (c *cache) load_cache() {
+	c.mutex.Lock()
+	defer c.mutex.Unlock()
+
+	cache_.m = map[string]string{}
+
+	tmpc.mutex.RLock()
+	defer tmpc.mutex.RUnlock()
+
+	for k, v := range tmpc.m {
+		cache_.m[k] = v
+	}
+	caba_log("LOADED LAST CACHE")
 }
 
 func (c *cache) cache_ds(ds dbslice) {
-	c.slices = append(c.slices, ds)
+	c.mutex.RLock()
+	defer c.mutex.RUnlock()
+
+	for len(c.m) >= config_.cache_size {
+		for k := range c.m {
+			c.delete(k)
+			break
+		}
+	}
+
+	c.mutex.Lock()
+	defer c.mutex.Unlock()
+
+	c.m[ds.key] = ds.value
 }
 
 func (c *cache) clear() {
-	c.slices = []dbslice{}
+	c.mutex.Lock()
+	defer c.mutex.Unlock()
+
+	c.m = map[string]string{}
 }
 
 func (c *cache) delete(key string) {
-	for i, sl := range c.slices {
-		if sl.key == key {
-			c.slices = append(c.slices[:i], c.slices[i+1:]...)
-		}
-	}
+	c.mutex.Lock()
+	defer c.mutex.Unlock()
+
+	delete(c.m, key)
 }
 
-func (c cache) search_ds(key string) *dbslice {
-	for _, sl := range c.slices {
-		if sl.key == key {
-			return &sl
-		}
+func (c *cache) search_ds(key string) *dbslice {
+	c.mutex.RLock()
+	defer c.mutex.RUnlock()
+
+	if v, ok := c.m[key]; ok {
+		return &dbslice{key, v}
 	}
 	return nil
 }

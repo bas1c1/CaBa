@@ -10,7 +10,7 @@ import (
 
 var maindb db = db{"name", 3}
 var cache_ cache
-var q *queue = newQueue(8192)
+var q *queue = newQueue(16384)
 
 const (
 	HOST = "localhost"

@@ -36,11 +36,11 @@ func (tr transaction) execute() string {
 		}
 		db.remove(maindb, tr.request.args[0])
 		return "ok - del"
-	case "update":
-		update_backup()
+	case "updatecache":
+		cache_.save_cache()
 		return "ok - updated"
-	case "load":
-		load_backup()
+	case "loadcache":
+		cache_.load_cache()
 		return "ok - loaded"
 	case "loadfrom":
 		if len(tr.request.args) <= 0 {
@@ -51,6 +51,9 @@ func (tr transaction) execute() string {
 		return "ok - loaded from " + tr.request.args[0]
 	case "save":
 		return save_backup()
+	case "asave":
+		go save_backup_async()
+		return "ok - async updating backup started"
 	}
 	return "ok"
 }
