@@ -4,11 +4,30 @@ import (
 	"crypto/aes"
 	"crypto/cipher"
 	"crypto/sha256"
+	"crypto/sha512"
+	"encoding"
+	"encoding/hex"
 )
 
 func generateNonce(data string) []byte {
 	hash := sha256.Sum256([]byte(data))
 	return hash[:12]
+}
+
+func hashgen(data string) string {
+	hashkey := sha512.New()
+	hashkey.Write([]byte(data))
+
+	marshaler, ok := hashkey.(encoding.BinaryMarshaler)
+	if !ok {
+		caba_err("first does not implement encoding.BinaryMarshaler")
+	}
+	_, err := marshaler.MarshalBinary()
+	if err != nil {
+		caba_err("unable to marshal hash:")
+	}
+
+	return hex.EncodeToString(hashkey.Sum(nil))
 }
 
 func encrypt(data string) string {
@@ -29,7 +48,7 @@ func encrypt(data string) string {
 	return string(gcm.Seal(nonce, nonce, []byte(data), nil))
 }
 
-func decrypt(line string) string {
+func decrypt(line []byte) string {
 	block, err := aes.NewCipher(config_.passkey)
 	if err != nil {
 		throw(err)

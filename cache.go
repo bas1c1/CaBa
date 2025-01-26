@@ -40,18 +40,12 @@ func (c *cache) load_cache() {
 }
 
 func (c *cache) cache_ds(ds dbslice) {
-	c.mutex.RLock()
-	defer c.mutex.RUnlock()
-
 	for len(c.m) >= config_.cache_size {
 		for k := range c.m {
 			c.delete(k)
 			break
 		}
 	}
-
-	c.mutex.Lock()
-	defer c.mutex.Unlock()
 
 	c.m[ds.key] = ds.value
 }
@@ -70,12 +64,9 @@ func (c *cache) delete(key string) {
 	delete(c.m, key)
 }
 
-func (c *cache) search_ds(key string) *dbslice {
-	c.mutex.RLock()
-	defer c.mutex.RUnlock()
-
+func (c *cache) search_ds(key string) dbslice {
 	if v, ok := c.m[key]; ok {
-		return &dbslice{key, v}
+		return dbslice{key, v}
 	}
-	return nil
+	return _zeroslice
 }

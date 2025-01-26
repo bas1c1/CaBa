@@ -12,6 +12,8 @@ func throw(ex exception) {
 	//naah
 	//panic(ex)
 
+	//well this function needs to be rewrited buuut i dont care bout this shit so use this function if you need it somehow
+
 	caba_err(ex)
 }
 
@@ -29,4 +31,10 @@ func (hndl handle) do_() {
 	}
 
 	hndl.try()
+}
+
+func _check(err error) {
+	if err != nil {
+		caba_err(err)
+	}
 }

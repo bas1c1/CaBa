@@ -1,15 +1,14 @@
 package main
 
 import (
-	"bufio"
 	"fmt"
 	"log"
 	"net"
 	"os"
 )
 
-var maindb db = db{"name", 3}
-var cache_ cache
+var maindb db = db{}
+var cache_ cache = cache{m: map[string]string{}}
 var q *queue = newQueue(16384)
 
 const (
@@ -19,30 +18,14 @@ const (
 )
 
 func main() {
-	file, err := os.Open("config")
-	if err != nil {
-		defer file.Close()
+	cfgerr := load_cfg("config")
+
+	if cfgerr != nil {
 		fmt.Println("config file not found. creating config.")
-		file, err = os.Create("config")
-		if err != nil {
-			fmt.Println(err)
-			os.Exit(1)
-		}
+		file, err := os.Create("config")
+		file.WriteString("PASSKEY=\"lolrandompass12\"\nCACHE_SIZE=\"8192\"")
+		_check(err)
 		defer file.Close()
-	} else {
-		defer file.Close()
-
-		cache_.clear()
-
-		scanner := bufio.NewScanner(file)
-
-		for scanner.Scan() {
-			parseConfig(scanner.Text())
-		}
-
-		if err := scanner.Err(); err != nil {
-			log.Fatal(err)
-		}
 	}
 
 	listen, err := net.Listen(TYPE, HOST+":"+PORT)

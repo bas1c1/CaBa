@@ -7,17 +7,53 @@ type transaction struct {
 
 func (tr transaction) execute() string {
 	switch tr.request.fn {
+	case "create_db":
+		if len(tr.request.args) <= 0 {
+			caba_err("ERR GET - NOT ENOUGH ARGS")
+			return "not ok"
+		}
+		v := create_db(tr.request.args[0])
+		if v != nil {
+			return v.name
+		}
+		return "not ok"
+	case "choose_db":
+		if len(tr.request.args) <= 0 {
+			caba_err("ERR GET - NOT ENOUGH ARGS")
+			return "not ok"
+		}
+		maindb = db{tr.request.args[0]}
+		cache_.clear()
+		return tr.request.args[0]
 	case "get":
 		if len(tr.request.args) <= 0 {
 			caba_err("ERR GET - NOT ENOUGH ARGS")
 			return "not ok"
 		}
 		v := db.get(maindb, tr.request.args[0])
-		if v != nil {
+		if v != _zeroslice {
 			return v.value
-		} else {
-			return ""
 		}
+		return ""
+	case "multiget":
+		if len(tr.request.args) <= 0 {
+			caba_err("ERR GET - NOT ENOUGH ARGS")
+			return "not ok"
+		}
+
+		v := db.multiget(maindb, tr.request.args)
+		if v == nil {
+			return "[]"
+		}
+
+		rv := "["
+		for _, k := range v {
+			rv += k.value + ","
+		}
+
+		rv = rv[:len(rv)-1] + "]"
+
+		return rv
 	case "set":
 		if len(tr.request.args) <= 0 {
 			caba_err("ERR SET - NOT ENOUGH ARGS")
@@ -36,6 +72,9 @@ func (tr transaction) execute() string {
 		}
 		db.remove(maindb, tr.request.args[0])
 		return "ok - del"
+	case "clearcache":
+		cache_.clear()
+		return "ok - cleared"
 	case "updatecache":
 		cache_.save_cache()
 		return "ok - updated"
@@ -54,6 +93,33 @@ func (tr transaction) execute() string {
 	case "asave":
 		go save_backup_async()
 		return "ok - async updating backup started"
+	case "loadcfg":
+		if len(tr.request.args) <= 0 {
+			caba_err("ERR LOADFROM - NOT ENOUGH ARGS")
+			return "not ok"
+		}
+		load_cfg(tr.request.args[0])
+		return "ok - loaded config " + tr.request.args[0]
+	case "zip":
+		if len(tr.request.args) <= 0 {
+			zname := maindb.name + ".zip"
+			createZip(zname, maindb.name)
+			return zname
+		} else {
+			zname := tr.request.args[0] + ".zip"
+			createZip(zname, tr.request.args[0])
+			return zname
+		}
+	case "unzip":
+		if len(tr.request.args) <= 0 {
+			zname := maindb.name + ".zip"
+			unzip(zname, maindb.name)
+			return maindb.name
+		} else {
+			zname := tr.request.args[0] + ".zip"
+			unzip(zname, tr.request.args[0])
+			return tr.request.args[0]
+		}
 	}
 	return "ok"
 }

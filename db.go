@@ -2,6 +2,7 @@ package main
 
 import (
 	"bufio"
+	"io"
 	"os"
 )
 
@@ -10,23 +11,26 @@ type dbslice struct {
 	value string
 }
 
+var _zeroslice = dbslice{}
+
 type db struct {
-	name  string
-	dsize int64
+	name string
+}
+
+func create_db(name string) *db {
+	err := os.Mkdir(name, 0755)
+	_check(err)
+	return &db{name}
 }
 
 func (d db) remove(key string) {
 	file, err := os.Open(d.name)
 	scanner := bufio.NewScanner(file)
-	if err != nil {
-		caba_err(err)
-	}
+	_check(err)
 	defer file.Close()
 
 	tempFile, err := os.CreateTemp("", "temp_*")
-	if err != nil {
-		caba_err(err)
-	}
+	_check(err)
 	defer os.Remove(tempFile.Name())
 
 	cache_.delete(key)
@@ -35,7 +39,7 @@ func (d db) remove(key string) {
 
 	for scanner.Scan() {
 		s := scanner.Text()
-		ds := parseDbSlice(decrypt(s))
+		ds := parseDbSlice(s)
 		if ds.key != key {
 			if _, err := writer.WriteString(s); err != nil {
 				caba_err(err)
@@ -60,130 +64,108 @@ func (d db) remove(key string) {
 }
 
 func (d db) set(ks []dbslice) {
-	file, err := os.OpenFile(d.name, os.O_APPEND|os.O_RDWR|os.O_CREATE, 0600)
-	writer := bufio.NewWriter(file)
-	if err != nil {
-		caba_err(err)
-	}
-	defer file.Close()
-	scanner := bufio.NewScanner(file)
-
 	for _, kvp := range ks {
-		for scanner.Scan() {
-			ds := parseDbSlice(decrypt(scanner.Text()))
-			if ds.key == kvp.key {
-				return
-			}
+		fname := hashgen(kvp.key)
+
+		file, err := os.OpenFile(d.name+"/"+fname, os.O_WRONLY|os.O_CREATE, 0600)
+		if err != nil {
+			caba_err(err)
 		}
-		if len(kvp.key) != 0 {
-			s := "\"" + kvp.key + "\";\"" + kvp.value + "\"\n"
 
-			if _, err := writer.WriteString(encrypt(s)); err != nil {
-				caba_err(err)
-			}
+		file.Write([]byte(encrypt(kvp.value)))
+		defer file.Close()
 
-			caba_log("WRITED " + s)
+		caba_log("WRITED " + "\"" + kvp.key + "\";\"" + kvp.value + "\"\n")
+
+		c := cache_.search_ds(kvp.key)
+		if c != _zeroslice {
+			cache_.cache_ds(dbslice{kvp.key, kvp.value})
 		}
-	}
-
-	if err := writer.Flush(); err != nil {
-		caba_err(err)
 	}
 }
 
-func (d db) get(key string) *dbslice {
+func (d db) get(key string) dbslice {
 	c := cache_.search_ds(key)
-	if c != nil {
+	if c != _zeroslice {
 		return c
 	} else {
-		return d.updatewds(d.name, key)
+		return d.updatewds(key)
 	}
 }
 
-func (d *db) updatewds(fname string, key string) *dbslice {
-	file, err := os.Open(fname)
-	if err != nil {
-		caba_err(err)
-	}
-	defer file.Close()
+func (d db) multiget(keys []string) []dbslice {
+	var values []dbslice
+	for _, key := range keys {
+		c := cache_.search_ds(key)
 
-	cache_.clear()
-
-	var tmp dbslice
-
-	scanner := bufio.NewScanner(file)
-
-	for scanner.Scan() {
-		ds := parseDbSlice(decrypt(scanner.Text()))
-		if ds.key == key {
-			tmp = ds
-			cache_.cache_ds(ds)
-			break
+		if c != _zeroslice {
+			values = append(values, c)
+			continue
 		}
+
+		values = append(values, d.updatewds(key))
 	}
+	return values
+}
 
-	if err := scanner.Err(); err != nil {
-		caba_err(err)
-	} else {
-		cache_.save_cache()
+func (d *db) updatewds(key string) dbslice {
+	k := hashgen(key)
 
-		caba_log("UPDATED " + key + " FROM " + fname)
-	}
+	content, err := os.ReadFile(d.name + "/" + k)
+	_check(err)
 
-	return &tmp
+	v := decrypt(content)
+
+	ds := dbslice{key, v}
+
+	cache_.cache_ds(ds)
+
+	caba_log("UPDATED " + key)
+
+	return ds
 }
 
 func (d *db) update(fname string) {
-	file, err := os.Open(fname)
-	if err != nil {
-		caba_err(err)
-	}
-	defer file.Close()
+	dir, err := os.ReadDir(fname)
+	_check(err)
 
-	cache_.clear()
+	for _, entry := range dir {
+		ename := entry.Name()
 
-	scanner := bufio.NewScanner(file)
-
-	for scanner.Scan() {
-		ds := parseDbSlice(decrypt(scanner.Text()))
-		if _, ok := cache_.m[ds.key]; ok {
-			cache_.m[ds.key] = ds.value
-		}
-	}
-
-	if err := scanner.Err(); err != nil {
-		caba_err(err)
-	} else {
-		cache_.save_cache()
-
-		caba_log("UPDATED FROM " + fname)
+		_, err = copy(fname+"\\"+ename, d.name+"\\"+ename)
+		_check(err)
 	}
 }
 
 func (d *db) save(fname string) {
-	file, err := os.Create(fname)
-	writer := bufio.NewWriter(file)
-	if err != nil {
-		caba_err(err)
-	}
-	defer file.Close()
+	dir, err := os.ReadDir(d.name)
+	_check(err)
 
-	file2, err2 := os.Open(d.name)
-	scanner := bufio.NewScanner(file2)
-	if err2 != nil {
-		caba_err(err2)
-	}
-	defer file2.Close()
+	err = os.Mkdir(fname, 0755)
+	_check(err)
 
-	for scanner.Scan() {
-		writer.WriteString(scanner.Text())
+	for _, entry := range dir {
+		ename := entry.Name()
+		_, err = copy(d.name+"\\"+ename, fname+"\\"+ename)
+		_check(err)
+	}
+}
+
+func copy(src string, dst string) (int64, error) {
+	sourceFileStat, err := os.Stat(src)
+	_check(err)
+
+	if !sourceFileStat.Mode().IsRegular() {
+		caba_err("Error in copy")
 	}
 
-	if err := writer.Flush(); err != nil {
-		caba_err(err)
-	} else if err := scanner.Err(); err != nil {
-		caba_err(err)
-	} else {
-		caba_log("SAVED TO " + fname)
-	}
+	source, err := os.Open(src)
+	_check(err)
+	defer source.Close()
+
+	destination, err := os.Create(dst)
+	_check(err)
+	defer destination.Close()
+	nBytes, err := io.Copy(destination, source)
+	return nBytes, err
 }
