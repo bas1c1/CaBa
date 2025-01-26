@@ -3,7 +3,7 @@
 
 # CaBa
 
-CaBa - caching, lightweight NoSQL key-value database written in GoLang
+CaBa - caching, lightweight (1000 LoC +-) NoSQL key-value database written in GoLang
 
 # Using
 
