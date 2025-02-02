@@ -101,25 +101,23 @@ func (tr transaction) execute() string {
 		load_cfg(tr.request.args[0])
 		return "ok - loaded config " + tr.request.args[0]
 	case "zip":
+		dname := ""
 		if len(tr.request.args) <= 0 {
-			zname := maindb.name + ".zip"
-			createZip(zname, maindb.name)
-			return zname
+			dname = maindb.name
 		} else {
-			zname := tr.request.args[0] + ".zip"
-			createZip(zname, tr.request.args[0])
-			return zname
+			dname = tr.request.args[0]
 		}
+		createZip(dname+".zip", dname)
+		return dname
 	case "unzip":
+		dname := ""
 		if len(tr.request.args) <= 0 {
-			zname := maindb.name + ".zip"
-			unzip(zname, maindb.name)
-			return maindb.name
+			dname = maindb.name
 		} else {
-			zname := tr.request.args[0] + ".zip"
-			unzip(zname, tr.request.args[0])
-			return tr.request.args[0]
+			dname = tr.request.args[0]
 		}
+		unzip(dname+".zip", dname)
+		return dname
 	}
 	return "ok"
 }

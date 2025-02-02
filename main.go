@@ -23,7 +23,7 @@ func main() {
 	if cfgerr != nil {
 		fmt.Println("config file not found. creating config.")
 		file, err := os.Create("config")
-		file.WriteString("PASSKEY=\"lolrandompass12\"\nCACHE_SIZE=\"8192\"")
+		file.WriteString("PASSKEY=\"YbQjLuBXX4yv18oqmEzXOnf67USJJZN8\"\nCACHE_SIZE=\"8192\"")
 		_check(err)
 		defer file.Close()
 	}

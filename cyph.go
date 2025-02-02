@@ -3,14 +3,13 @@ package main
 import (
 	"crypto/aes"
 	"crypto/cipher"
-	"crypto/sha256"
 	"crypto/sha512"
 	"encoding"
 	"encoding/hex"
 )
 
 func generateNonce(data string) []byte {
-	hash := sha256.Sum256([]byte(data))
+	hash := sha512.Sum512([]byte(data))
 	return hash[:12]
 }
 
