@@ -28,7 +28,7 @@ The Licensee does not have the right to:
 
 ## 4. Final Provisions
 
-- This License comes into effect upon acceptance by the User or Licensee.
+- This License comes into effect from the moment it is uploaded to the repository.
 - The License may only be amended with the consent of both parties.
 - All rights not granted under this License remain with the copyright holder.
 
