@@ -1,5 +1,7 @@
 package main
 
+//well i dont actually need this entire script, but it can be useful, so i wont delete it mkay?
+
 type exception interface{}
 
 type handle struct {
@@ -9,12 +11,8 @@ type handle struct {
 }
 
 func throw(ex exception) {
-	//naah
-	//panic(ex)
-
-	//well this function needs to be rewrited buuut i dont care bout this shit so use this function if you need it somehow
-
 	caba_err(ex)
+	panic(-1)
 }
 
 func (hndl handle) do_() {

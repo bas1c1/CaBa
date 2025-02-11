@@ -1,7 +1,6 @@
 package main
 
 import (
-	"bufio"
 	"io"
 	"os"
 )
@@ -24,42 +23,15 @@ func create_db(name string) *db {
 }
 
 func (d db) remove(key string) {
-	file, err := os.Open(d.name)
-	scanner := bufio.NewScanner(file)
-	_check(err)
-	defer file.Close()
+	cache_.save_cache()
 
-	tempFile, err := os.CreateTemp("", "temp_*")
-	_check(err)
-	defer os.Remove(tempFile.Name())
-
-	cache_.delete(key)
-
-	writer := bufio.NewWriter(tempFile)
-
-	for scanner.Scan() {
-		s := scanner.Text()
-		ds := parseDbSlice(s)
-		if ds.key != key {
-			if _, err := writer.WriteString(s); err != nil {
-				caba_err(err)
-			}
-		}
-	}
-
-	if err := writer.Flush(); err != nil {
+	if err := os.Remove(d.name + "/" + hashgen(key)); err != nil {
 		caba_err(err)
+		cache_.load_cache()
 	} else {
-		file.Close()
-		tempFile.Close()
+		caba_log("DELETED " + key)
 
-		if err := os.Rename(tempFile.Name(), d.name); err != nil {
-			caba_err(err)
-		} else {
-			caba_log("DELETED " + key)
-
-			cache_.save_cache()
-		}
+		cache_.save_cache()
 	}
 }
 

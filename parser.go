@@ -6,30 +6,6 @@ import (
 	"strings"
 )
 
-func parseDbSlice(line string) dbslice {
-	ds := dbslice{"", ""}
-	l := len(line)
-
-	var buf string
-
-	for i := 0; i < l-1; i++ {
-		if line[i] == ';' {
-			ds.key = buf
-			buf = ""
-			continue
-		} else if line[i] == '"' {
-			buf += parseString(line, &i, true)
-			continue
-		}
-
-		buf += string(line[i])
-	}
-
-	ds.value = buf
-
-	return ds
-}
-
 func parseRequest(line string) request {
 	req := request{"", []string{}}
 	var buf string
