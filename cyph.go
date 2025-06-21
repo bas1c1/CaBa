@@ -5,8 +5,16 @@ import (
 	"crypto/cipher"
 	"crypto/sha512"
 	"encoding"
-	"encoding/hex"
+	"encoding/base32"
 )
+
+func encode_base32(data []byte) string {
+	return base32.StdEncoding.EncodeToString(data);
+}
+
+func decode_base32(s string) ([]byte, error) {
+    return base32.StdEncoding.DecodeString(s)
+}
 
 func generateNonce(data string) []byte {
 	hash := sha512.Sum512([]byte(data))
@@ -14,19 +22,23 @@ func generateNonce(data string) []byte {
 }
 
 func hashgen(data string) string {
-	hashkey := sha512.New()
-	hashkey.Write([]byte(data))
+	if config_.hash_keys {
+		hashkey := sha512.New()
+		hashkey.Write([]byte(data))
 
-	marshaler, ok := hashkey.(encoding.BinaryMarshaler)
-	if !ok {
-		caba_err("first does not implement encoding.BinaryMarshaler")
-	}
-	_, err := marshaler.MarshalBinary()
-	if err != nil {
-		caba_err("unable to marshal hash:")
-	}
+		marshaler, ok := hashkey.(encoding.BinaryMarshaler)
+		if !ok {
+			caba_err("first does not implement encoding.BinaryMarshaler")
+		}
+		_, err := marshaler.MarshalBinary()
+		if err != nil {
+			caba_err("unable to marshal hash:")
+		}
 
-	return hex.EncodeToString(hashkey.Sum(nil))
+		return base32.StdEncoding.EncodeToString(hashkey.Sum(nil))
+	} else {
+		return base32.StdEncoding.EncodeToString([]byte(encrypt(data)));
+	}
 }
 
 func encrypt(data string) string {

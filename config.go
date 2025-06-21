@@ -8,6 +8,8 @@ import (
 type config struct {
 	passkey    []byte
 	cache_size int
+	hash_keys bool
+	caching bool
 }
 
 var config_ config

@@ -3,7 +3,17 @@ package main
 import (
 	"io"
 	"os"
+	"strings"
+	"unicode/utf8"
 )
+
+func has_key(s string) bool {
+    return strings.HasSuffix(s, ".key")
+}
+
+func trim_key(s string) string {
+    return s[:len(s)-4]
+}
 
 type dbslice struct {
 	key   string
@@ -17,6 +27,10 @@ type db struct {
 }
 
 func create_db(name string) *db {
+	if has_key(name) {
+		caba_err("wrong database name")
+		return nil
+	}
 	err := os.Mkdir(name, 0755)
 	_check(err)
 	return &db{name}
@@ -39,7 +53,7 @@ func (d db) set(ks []dbslice) {
 	for _, kvp := range ks {
 		fname := hashgen(kvp.key)
 
-		file, err := os.OpenFile(d.name+"/"+fname, os.O_WRONLY|os.O_CREATE, 0600)
+		file, err := os.OpenFile(d.name+"/"+fname+".key", os.O_WRONLY|os.O_CREATE, 0600)
 		if err != nil {
 			caba_err(err)
 		}
@@ -50,7 +64,7 @@ func (d db) set(ks []dbslice) {
 		caba_log("WRITED " + "\"" + kvp.key + "\";\"" + kvp.value + "\"\n")
 
 		c := cache_.search_ds(kvp.key)
-		if c != _zeroslice {
+		if c != _zeroslice && config_.caching {
 			cache_.cache_ds(dbslice{kvp.key, kvp.value})
 		}
 	}
@@ -80,17 +94,56 @@ func (d db) multiget(keys []string) []dbslice {
 	return values
 }
 
+func (d db) list() []dbslice {
+	var values []dbslice
+
+	dir, err := os.ReadDir(d.name)
+	_check(err)
+
+	for _, entry := range dir {
+		ename := entry.Name()
+
+		if has_key(ename) {
+			content, err := os.ReadFile(d.name + "/" + ename)
+			_check(err)
+
+			v := decrypt(content)
+
+			k, err := decode_base32(trim_key(ename))
+			_check(err)
+
+			ds := dbslice{}
+			
+			if config_.hash_keys && utf8.ValidString(string(k)) {
+				ds.key = string(k)
+				ds.value = v
+			} else {
+				ds.key = decrypt(k)
+				ds.value = v
+			}
+
+			values = append(values, ds)
+		} else {
+			values = append(values, dbslice{ename, "THIS_IS_DATABASE"})
+		}
+	}
+
+	return values
+}
+
 func (d *db) updatewds(key string) dbslice {
 	k := hashgen(key)
 
-	content, err := os.ReadFile(d.name + "/" + k)
+	content, err := os.ReadFile(d.name + "/" + k + ".key")
 	_check(err)
 
 	v := decrypt(content)
 
 	ds := dbslice{key, v}
 
-	cache_.cache_ds(ds)
+	if config_.caching {
+		cache_.cache_ds(ds)
+	}
 
 	caba_log("UPDATED " + key)
 

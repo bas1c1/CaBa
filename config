@@ -1,2 +1,4 @@
 PASSKEY="lolrandompass12lolrandompass1212"
 CACHE_SIZE="8192"
+HASH_KEYS="1"
+CACHING="1"

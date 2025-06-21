@@ -6,26 +6,39 @@ import (
 	"strings"
 )
 
-func parseRequest(line string) request {
+func parseRequests(line string) []request {
+	var requests []request
+
 	req := request{"", []string{}}
 	var buf string
 	l := len(line)
 	for i := 0; i < l; i++ {
-		if line[i] == '{' {
-			req.fn = buf
-			i++
-			parseArgs(line, i, &req)
-			buf = ""
+		for ;i < l;i++ {
+			if line[i] == '{' {
+				req.fn = buf
+				i++
+				parseArgs(line, &i, &req)
+				buf = ""
+				break
+			}
+			buf += string(line[i])
 		}
-		buf += string(line[i])
+		if i >= l {
+			break
+		}
+		requests = append(requests, req)
+		req = request{"", []string{}}
+		buf = ""
 	}
-	return req
+	return requests
 }
 
-func parseArgs(line string, offset int, req *request) {
+func parseArgs(line string, offset *int, req *request) {
 	buf := ""
 
-	for i := offset; line[i] != '}'; i++ {
+	i := *offset
+
+	for ; line[i] != '}'; i++ {
 		if line[i] == '"' {
 			buf = parseString(line, &i, true)
 			continue
@@ -36,9 +49,12 @@ func parseArgs(line string, offset int, req *request) {
 		}
 		buf += string(line[i])
 	}
+
 	if buf != "" {
 		req.args = append(req.args, buf)
 	}
+
+	*offset = i
 }
 
 func parseString(line string, offset *int, slash bool) string {
@@ -86,6 +102,14 @@ func parseConfig(line string) {
 			} else if wrd == "CACHE_SIZE" && line[i+1] == '"' {
 				i++
 				config_.cache_size, _ = strconv.Atoi(parseString(line, &i, false))
+			} else if wrd == "HASH_KEYS" && line[i+1] == '"' {
+				i++
+				parsed_int, _ := strconv.Atoi(parseString(line, &i, false))
+				config_.hash_keys = parsed_int != 0
+			} else if wrd == "CACHING" && line[i+1] == '"' {
+				i++
+				parsed_int, _ := strconv.Atoi(parseString(line, &i, false))
+				config_.caching = parsed_int != 0
 			}
 		}
 	}

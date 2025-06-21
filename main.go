@@ -35,6 +35,9 @@ func main() {
 	}
 
 	defer listen.Close()
+
+	caba_log("Database started")
+
 	for {
 		conn, err := listen.Accept()
 		if err != nil {
@@ -46,22 +49,26 @@ func main() {
 }
 
 func handleRequest(conn net.Conn) {
-	buffer := make([]byte, 1024)
+	buffer := make([]byte, 2048)
 	n, err := conn.Read(buffer)
 	if err != nil {
 		log.Fatal(err)
 	}
 
-	tr := transaction{
-		-1,
-		parseRequest(string(buffer[:n])),
+	reqs := parseRequests(string(buffer[:n]))
+
+	for _, v := range reqs {
+		tr := transaction{
+			-1,
+			v,
+		}
+
+		_, res := q.Add(tr)
+		s := string(<-res)
+
+		responseStr := fmt.Sprintf("%v", s)
+		conn.Write([]byte(responseStr + "\n"))
 	}
-
-	_, res := q.Add(tr)
-	s := string(<-res)
-
-	responseStr := fmt.Sprintf("%v", s)
-	conn.Write([]byte(responseStr))
 
 	conn.Close()
 }

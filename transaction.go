@@ -54,6 +54,20 @@ func (tr transaction) execute() string {
 		rv = rv[:len(rv)-1] + "]"
 
 		return rv
+	case "list":
+		v := db.list(maindb)
+		if v == nil {
+			return "[]"
+		}
+
+		rv := "["
+		for _, k := range v {
+			rv += "key: " + "\"" + k.key + "\"" + " - " + "value: " + "\"" + k.value + "\"" + ","
+		}
+
+		rv = rv[:len(rv)-1] + "]"
+
+		return rv
 	case "set":
 		if len(tr.request.args) <= 0 {
 			caba_err("ERR SET - NOT ENOUGH ARGS")
