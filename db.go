@@ -135,7 +135,10 @@ func (d *db) updatewds(key string) dbslice {
 	k := hashgen(key)
 
 	content, err := os.ReadFile(d.name + "/" + k + ".key")
-	_check(err)
+	if err != nil {
+		caba_err("not found")
+		return dbslice{}
+	}
 
 	v := decrypt(content)
 

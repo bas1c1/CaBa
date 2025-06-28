@@ -7,6 +7,9 @@ import (
 )
 
 func caba_log(msg string) {
+	if !config_.logger {
+		return
+	}
 	T := time.Now().UTC().String()
 
 	text := "LOG - " + T + " - " + msg
@@ -31,6 +34,9 @@ func caba_log(msg string) {
 }
 
 func caba_err(err exception) {
+	if !config_.logger {
+		return
+	}
 	T := time.Now().UTC().String()
 
 	errt := fmt.Sprintf("%v", err)

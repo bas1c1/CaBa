@@ -10,6 +10,7 @@ type config struct {
 	cache_size int
 	hash_keys bool
 	caching bool
+	logger bool
 }
 
 var config_ config

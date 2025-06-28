@@ -9,7 +9,7 @@ import (
 func parseRequests(line string) []request {
 	var requests []request
 
-	req := request{"", []string{}}
+	req := request{"", []string{}, ""}
 	var buf string
 	l := len(line)
 	for i := 0; i < l; i++ {
@@ -27,7 +27,7 @@ func parseRequests(line string) []request {
 			break
 		}
 		requests = append(requests, req)
-		req = request{"", []string{}}
+		req = request{"", []string{}, ""}
 		buf = ""
 	}
 	return requests
@@ -110,6 +110,10 @@ func parseConfig(line string) {
 				i++
 				parsed_int, _ := strconv.Atoi(parseString(line, &i, false))
 				config_.caching = parsed_int != 0
+			} else if wrd == "LOGGER" && line[i+1] == '"' {
+				i++
+				parsed_int, _ := strconv.Atoi(parseString(line, &i, false))
+				config_.logger = parsed_int != 0
 			}
 		}
 	}
