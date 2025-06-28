@@ -52,8 +52,8 @@ func (s *server) start(address string) error {
 }
 
 func (s *server) handleConnection(conn net.Conn) {
-	tcpConn := NewTCPConn(conn)
-	defer tcpConn.Close()
+	tcpConn := newTCPConn(conn)
+	defer tcpConn.close_tcp()
 
 	clientID := generateClientID()
 	s.addClient(clientID, tcpConn)
@@ -95,7 +95,7 @@ func (s *server) removeClient(clientID string) {
 	s.clientsMutex.Lock()
 	defer s.clientsMutex.Unlock()
 	if conn, exists := s.clients[clientID]; exists {
-		conn.Close()
+		conn.close_tcp()
 		delete(s.clients, clientID)
 	}
 }
@@ -110,7 +110,7 @@ func (s *server) sendResponse(clientID string, response string) {
 		return
 	}
 
-	err := conn.SendMessage([]byte(response))
+	err := conn.sendMessage([]byte(response))
 	if err != nil {
 		caba_err("Error sending response to client")
 		s.removeClient(clientID)
