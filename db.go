@@ -110,14 +110,16 @@ func (d db) list() []dbslice {
 			v := decrypt(content)
 
 			k, err := decode_base32(trim_key(ename))
-			_check(err)
+			if err != nil {
+				caba_err(err)
+			}
 
 			ds := dbslice{}
 			
 			if config_.hash_keys && utf8.ValidString(string(k)) {
 				ds.key = string(k)
 				ds.value = v
-			} else {
+			} else if !config_.hash_keys && !utf8.ValidString(string(k)) {
 				ds.key = decrypt(k)
 				ds.value = v
 			}

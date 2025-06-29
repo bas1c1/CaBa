@@ -45,5 +45,10 @@ def recieve_message():
 send_message("choose_db{\"name\"}")
 recieve_message()
 
-send_message("get{\"" + str(55) + "\"}")
+send_message("set{\"name\", \"123\"}")
+recieve_message()
+
+send_message("list{}")
 print(recieve_message())
+
+input()

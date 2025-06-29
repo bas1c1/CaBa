@@ -6,10 +6,12 @@ import (
 	"crypto/sha512"
 	"encoding"
 	"encoding/base32"
+	"fmt"
+    "math/big"
 )
 
 func encode_base32(data []byte) string {
-	return base32.StdEncoding.EncodeToString(data);
+	return base32.StdEncoding.EncodeToString(data)
 }
 
 func decode_base32(s string) ([]byte, error) {
@@ -19,6 +21,12 @@ func decode_base32(s string) ([]byte, error) {
 func generateNonce(data string) []byte {
 	hash := sha512.Sum512([]byte(data))
 	return hash[:12]
+}
+
+func getHexString(bytesl []byte) (string) {
+    newkey := new(big.Int).SetBytes(bytesl)
+    base16str := fmt.Sprintf("%X",newkey)
+    return base16str
 }
 
 func hashgen(data string) string {
@@ -35,28 +43,30 @@ func hashgen(data string) string {
 			caba_err("unable to marshal hash:")
 		}
 
-		return base32.StdEncoding.EncodeToString(hashkey.Sum(nil))
+		return encode_base32([]byte(getHexString(hashkey.Sum(nil))))
 	} else {
-		return base32.StdEncoding.EncodeToString([]byte(encrypt(data)));
+		return encode_base32([]byte(encrypt(data)))
 	}
 }
 
-func encrypt(data string) string {
-	block, err := aes.NewCipher(config_.passkey)
-	if err != nil {
+func encrypt(plaintext string) string {
+    block, err := aes.NewCipher(config_.passkey)
+    if err != nil {
 		throw(err)
 		return ""
-	}
+    }
 
-	gcm, err := cipher.NewGCM(block)
-	if err != nil {
-		throw(err)
+    gcm, err := cipher.NewGCM(block)
+    if err != nil {
+        throw(err)
 		return ""
-	}
+    }
 
-	nonce := generateNonce(data)
+    nonce := make([]byte, gcm.NonceSize())
 
-	return string(gcm.Seal(nonce, nonce, []byte(data), nil))
+    ciphertext := gcm.Seal(nonce, nonce, []byte(plaintext), nil)
+
+    return string(ciphertext)
 }
 
 func decrypt(line []byte) string {
